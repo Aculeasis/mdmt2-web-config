@@ -1,0 +1,1 @@
+<abbr title="{wiki}">{name}</abbr>

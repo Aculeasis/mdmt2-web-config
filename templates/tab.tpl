@@ -1,0 +1,1 @@
+<input class="hdn_input" type="radio" {2} name="tab" id="tab{0}"> <label class="menu_label" for="tab{0}">{1}</label>
