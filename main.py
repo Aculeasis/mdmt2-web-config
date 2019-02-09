@@ -206,11 +206,11 @@ class Templates:
         return tpl
 
     def cfg(self) -> str:
-        return '{}\n{}\n{}'.format(self._tpl['header'], self._make_body(), self._tpl['footer'])
+        return '\n'.join((self._tpl['header'], self._make_body(), self._tpl['footer']))
 
     def result(self, cfg: dict) -> str:
         result = self._tpl['result'].format(value=json.dumps(cfg, ensure_ascii=False, indent=4))
-        return '{}\n{}\n{}'.format(self._tpl['header'], result, self._tpl['footer'])
+        return '\n'.join((self._tpl['header'], result, self._tpl['footer']))
 
     def _make_body(self) -> str:
         result = []
@@ -224,7 +224,7 @@ class Templates:
             if not section:
                 continue
             result.append(section)
-            tabs.append(self._tpl['tab'].format(index, key.capitalize(), 'checked' if index == 1 else ''))
+            tabs.append(self._tpl['tab'].format(index, key.capitalize(), 'checked ' if index == 1 else ''))
             csss.append(self._tpl['tab_css'].format(index))
             index += 1
         # add remote log tab
@@ -235,9 +235,9 @@ class Templates:
         csss.append(self._tpl['tab_css'].format(index))
 
         return self._tpl['cfg'].format(
-            value='\n'.join(result),
-            tabs='\n'.join(tabs),
-            css=',\n'.join(csss)
+            value='\n    '.join(result),
+            tabs='\n    '.join(tabs),
+            css=',\n  '.join(csss)
         )
 
     def _make_section(self, section: str) -> str:
@@ -258,7 +258,7 @@ class Templates:
         else:
             return ''
 
-    @lru_cache(maxsize=512)
+    @lru_cache(maxsize=256)
     def _make_option(self, sec: str, key: str, val: str, wiki: str) -> str:
         if isinstance(val, bool):
             selected = ' selected=""'

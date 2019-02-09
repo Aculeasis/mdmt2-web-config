@@ -1,12 +1,11 @@
 <style>
-    {css}
-    {{ display:block;}}
+  {css}
+  {{ display:block;}}
 </style>
-
 <form action="/" method="post">
-    <div class="tab-frame">
+  <div class="tab-frame">
     {tabs}
-    {value}
-    </div>
+{value}
+  </div>
   <p><input type="submit"> <input type="reset"></p>
 </form>
