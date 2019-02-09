@@ -1,5 +1,5 @@
 # Web config plugin for mdmTerminal2
-Позволяет настраивать терминал и смотреть логи в браузере.
+Позволяет настраивать [терминал](https://github.com/Aculeasis/mdmTerminal2) и смотреть логи в браузере.
 
 # Установка
 ```
@@ -22,7 +22,3 @@ git clone https://github.com/Aculeasis/mdmt2-web-config
 
 # Особенности
 - Плагин автоматически получает и обновляет описание настроек из wiki, они хранятся в `mdmTerminal2/src/data/web_config_wiki.json`.
-
-# Ссылки
-- [mdmTerminal2](https://github.com/Aculeasis/mdmTerminal2)
-- [Google Assistant SDK for devices - Python](https://github.com/googlesamples/assistant-sdk-python)
