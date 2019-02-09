@@ -88,6 +88,7 @@ def _settings_option_parse(cfg: list) -> dict:
             option = line.split('=', 1)[0].strip()
     result = _settings_option_parse_suppressing_1(result)
     result = _settings_option_parse_suppressing_2(result)
+    result = _settings_option_parse_suppressing_3(result)
     return result
 
 
@@ -113,6 +114,14 @@ def _settings_option_parse_suppressing_2(result: dict) -> dict:
     for key, val in result.items():
         if isinstance(val, list):
             result[key] = html_escape('\n'.join(val))
+    return result
+
+
+def _settings_option_parse_suppressing_3(result: dict) -> dict:
+    if 'null' in result:
+        print('FIXME! \'null\'-key has found!: {}'.format(repr(result['null'])))
+    if None in result:
+        result['null'] = result.pop(None)
     return result
 
 
