@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import threading
@@ -52,7 +53,7 @@ class Main(threading.Thread):
         return dsc
 
     def _get_settings(self) -> dict:
-        def_cfg = {'ip': '0.0.0.0', 'port': 8989, 'quiet': True, 'username': 'root', 'password': 'root'}
+        def_cfg = {'ip': '0.0.0.0', 'port': 8989, 'quiet': True, 'username': '', 'secure': []}
         cfg = self.cfg.load_dict(SETTINGS)
         if isinstance(cfg, dict):
             is_ok = True
@@ -81,11 +82,28 @@ class Main(threading.Thread):
         self.log('Web config available in http://{}:{}/'.format(self.cfg.gts('ip'), self._server.port), logger.INFO)
         self._server.run()
 
+    def _configure_auth(self, user, password):
+        self._settings['username'] = user
+        if password:
+            salt = hasher(os.urandom(64))
+            hash_ = hasher(password + salt)
+            self._settings['secure'] = [salt, hash_]
+        else:
+            self._settings['secure'] = []
+        self.cfg.save_dict(SETTINGS, self._settings, True)
+
     def _auth_basic(self):
-        if not (self._settings['username'] and self._settings['password']):
+        if self._settings['username'] and not self._settings['secure']:
+            # password authentication disabled
             return
-        user, password = bottle.request.auth or (None, None)
-        if user is None or not (user == self._settings['username'] and password == self._settings['password']):
+
+        user, password = bottle.request.auth or (None, '')
+        if not self._settings['username'] and user:
+            # First start
+            self._configure_auth(user, password)
+            msg = 'Setup is complete. Do not forget:\nusername: {}\npassword: {}'.format(user, password)
+            raise bottle.HTTPError(200, msg)
+        if not user or not (user == self._settings['username'] and check_password(self._settings['secure'], password)):
             raise bottle.HTTPError(401, 'Access denied', **{'WWW-Authenticate': 'Basic realm="private"'})
 
     def _do_get(self):
@@ -98,11 +116,26 @@ class Main(threading.Thread):
         for key, val in dict(bottle.request.forms.decode('utf-8')).items():
             # 'section$key': value
             key = key.split('$', 1)
-            if len(key) == 2 and key[0] in self.cfg:
+            if len(key) == 2 and key[0]:
                 if key[0] not in result:
                     result[key[0]] = {}
                 result[key[0]][key[1]] = val
         return self._tpl.result(self.own.settings_from_srv(result))
+
+
+def check_password(secure: list, password: str) -> bool:
+    if not password:
+        return False
+    if not isinstance(secure, list) or len(secure) != 2 or not (secure[0] and secure[1]):
+        return False
+    salt, hash_ = secure
+    return hash_ == hasher(password + salt)
+
+
+def hasher(data) -> str:
+    if isinstance(data, str):
+        data = data.encode()
+    return hashlib.sha512(data).hexdigest()
 
 
 class MyApp(bottle.Bottle):
