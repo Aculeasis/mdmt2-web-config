@@ -1,1 +1,0 @@
-div.tab-frame input:nth-of-type({0}):checked ~ .tab:nth-of-type({0})

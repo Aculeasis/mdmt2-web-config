@@ -1,5 +1,10 @@
 
 <div class="tab">
-<hr><h2>{abbr}</h2>
-{value}
+<hr>
+%if wiki:
+<h2><abbr title="{{!wiki}}">{{section.title()}}</abbr></h2>
+%end
+%for value in values:
+{{!value}}
+%end
 </div>

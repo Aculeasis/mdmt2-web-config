@@ -23,3 +23,6 @@
   }
   body{max-width:800px;margin:20px auto;font-family:Arial;}
 </style>
+{{!body}}
+</body>
+</html>

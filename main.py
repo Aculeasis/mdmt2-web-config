@@ -190,14 +190,7 @@ class Templates:
         self._tpl = self._load_templates()
 
     def _load_templates(self):
-        names = [
-            'bool', 'int', 'float', 'str', 'void',
-            'tab', 'tab_css',
-            'section', 'abbr',
-            'cfg', 'result',
-            'header', 'footer',
-            'remote_log',
-        ]
+        names = ('page', 'config', 'section', 'option', 'remote_log', 'result')
         tpl = {}
         for name in names:
             path = os.path.join(self.TEMPLATES, '{}.tpl'.format(name))
@@ -206,79 +199,55 @@ class Templates:
         return tpl
 
     def cfg(self) -> str:
-        return '\n'.join((self._tpl['header'], self._make_body(), self._tpl['footer']))
+        return self._make_page(self._make_config_body())
 
     def result(self, cfg: dict) -> str:
-        result = self._tpl['result'].format(value=json.dumps(cfg, ensure_ascii=False, indent=4))
-        return '\n'.join((self._tpl['header'], result, self._tpl['footer']))
+        return self._make_page(self._make_result_body(cfg))
 
-    def _make_body(self) -> str:
-        result = []
-        tabs = []
-        csss = []
-        index = 1
+    def _make_page(self, body: str) -> str:
+        return self._template('page', body=body)
+
+    def _make_result_body(self, diff: cfg) -> str:
+        return self._template('result', result=json.dumps(diff, ensure_ascii=False, indent=4))
+
+    def _make_config_body(self) -> str:
+        sections = []
+        tab_names = []
         for key in self._cfg:
             if not isinstance(self._cfg[key], dict):
                 continue
             section = self._make_section(key)
             if not section:
                 continue
-            result.append(section)
-            tabs.append(self._tpl['tab'].format(index, key.capitalize(), 'checked ' if index == 1 else ''))
-            csss.append(self._tpl['tab_css'].format(index))
-            index += 1
+            tab_names.append(key.capitalize())
+            sections.append(section)
         # add remote log tab
-        ip = self._cfg.gts('ip')
-        ws_token = self._cfg.gt('system', 'ws_token')
-        result.append(self._tpl['remote_log'].replace('{ip}', ip, 1).replace('{ws_token}', ws_token, 1))
-        tabs.append(self._tpl['tab'].format(index, '[REMOTE LOG]', ''))
-        csss.append(self._tpl['tab_css'].format(index))
-
-        return self._tpl['cfg'].format(
-            value='\n    '.join(result),
-            tabs='\n    '.join(tabs),
-            css=',\n  '.join(csss)
-        )
+        terminal_ip = self._cfg.gts('ip')
+        terminal_ws_token = self._cfg.gt('system', 'ws_token')
+        sections.append(self._template('remote_log', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
+        tab_names.append('[REMOTE LOG]')
+        return self._template('config', tab_names=tab_names, sections=sections)
 
     def _make_section(self, section: str) -> str:
-        value = []
+        values = []
         for key, val in self._cfg[section].items():
             if not isinstance(key, str) or section == 'system' and key not in ('ws_token',):
                 continue
-            value.append(self._make_option(section, key, val, self._wiki.get(section, {}).get(key, '')))
-        if value:
-            abbr = self._wiki.get(section, {}).get('null', '')
-            if abbr:
-                abbr = self._abbr(section.capitalize(), abbr)
-            return self._tpl['section'].format(
-                abbr=abbr,
-                name=section.capitalize(),
-                value='\n'.join(value)
+            values.append(self._make_option(section, key, val, self._wiki.get(section, {}).get(key, '')))
+        wiki = self._wiki.get(section, {}).get('null', '')
+        if values or wiki:
+            return self._template(
+                'section',
+                wiki=wiki,
+                section=section,
+                values=values,
             )
         else:
             return ''
 
     @lru_cache(maxsize=256)
-    def _make_option(self, sec: str, key: str, val: str, wiki: str) -> str:
-        if isinstance(val, bool):
-            selected = ' selected=""'
-            return self._tpl['bool'].format(
-                abbr=self._abbr(key, wiki),
-                full_name='{}${}'.format(sec, key),
-                selected_on=selected if val else '',
-                selected_off=selected if not val else '',
-            )
-        elif isinstance(val, int):
-            return self._tpl['int'].format(abbr=self._abbr(key, wiki), value=val, full_name='{}${}'.format(sec, key))
-        elif isinstance(val, str):
-            return self._tpl['str'].format(abbr=self._abbr(key, wiki), value=val, full_name='{}${}'.format(sec, key))
-        elif isinstance(val, float):
-            return self._tpl['float'].format(abbr=self._abbr(key, wiki), value=val, full_name='{}${}'.format(sec, key))
-        else:
-            return self._tpl['void'].format(name=key, type=type(val))
+    def _make_option(self, section: str, key: str, value, wiki: str) -> str:
+        return self._template('option', section=section, key=key, value=value, wiki=wiki)
 
-    def _abbr(self, name: str, wiki: str) -> str:
-        if wiki:
-            return self._tpl['abbr'].format(wiki=wiki, name=name)
-        else:
-            return name
+    def _template(self, name, **kwargs) -> str:
+        return bottle.template(self._tpl[name], **kwargs)

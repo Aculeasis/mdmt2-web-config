@@ -68,7 +68,7 @@
     // replace end
   function doConnect()
   {
-    websocket = new WebSocket("ws://{ip}:7999/");
+    websocket = new WebSocket("ws://{{!terminal_ip}}:7999/");
     websocket.onopen = function(evt) { onOpen(evt) };
     websocket.onclose = function(evt) { onClose(evt) };
     websocket.onmessage = function(evt) { onMessage(evt) };
@@ -78,7 +78,7 @@
   {
     writeToScreenMsg("connected");
     connectButton.value = "Disconnect";
-    websocket.send('{ws_token}');
+    websocket.send('{{!terminal_ws_token}}');
     websocket.send('remote_log');
   }
   function onClose(evt)
