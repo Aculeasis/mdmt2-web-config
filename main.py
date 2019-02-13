@@ -11,7 +11,7 @@ from wiki_parser import get_descriptions_from_wiki
 import logger
 
 NAME = 'web-config'
-API = 2
+API = 665
 
 WIKI_JSON = 'web_config_wiki'
 SETTINGS = 'web_config_config'
