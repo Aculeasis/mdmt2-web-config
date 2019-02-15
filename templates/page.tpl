@@ -21,6 +21,16 @@
   .result {
     background: #f8f7f2;
   }
+  .version {
+    font-size: xx-small;
+    float: right;
+    position: relative;
+    right: 5%;
+    transform: translate(0, 50%);
+  }
+  .buttons {
+    padding-left: 0.5em;
+  }
   body{max-width:800px;margin:20px auto;font-family:Arial;}
 </style>
 {{!body}}

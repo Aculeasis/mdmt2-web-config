@@ -6,16 +6,14 @@
 </style>
 <form action="/" method="post">
   <div class="tab-frame">
-%index = 1
-%checked = " checked "
-%for tab in tab_names:
-    <input class="hdn_input" type="radio"{{!checked}}name="tab" id="tab{{!index}}"><label class="menu_label" for="tab{{!index}}">{{tab}}</label>
+%for index, tab in enumerate(tab_names):
 %index += 1
-%checked = " "
+    <input class="hdn_input" type="radio"{{!" checked" if index == 1 else ""}} name="tab" id="tab{{!index}}">
+    <label class="menu_label" for="tab{{!index}}">{{tab}}</label>
 %end
 %for section in sections:
 {{!section}}
 %end
   </div>
-  <p><input type="submit"> <input type="reset"></p>
+  <div class="buttons"><input type="submit"> <input type="reset"> <div class="version">v. {{!version}}</div></div>
 </form>

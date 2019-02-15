@@ -208,7 +208,11 @@ class Templates:
         return self._template('page', body=body)
 
     def _make_result_body(self, diff: cfg) -> str:
-        return self._template('result', result=json.dumps(diff, ensure_ascii=False, indent=4))
+        return self._template(
+            'result',
+            result=json.dumps(diff, ensure_ascii=False, indent=4),
+            version=self._cfg.version_str
+        )
 
     def _make_config_body(self) -> str:
         sections = []
@@ -226,7 +230,7 @@ class Templates:
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
         sections.append(self._template('remote_log', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
         tab_names.append('[REMOTE LOG]')
-        return self._template('config', tab_names=tab_names, sections=sections)
+        return self._template('config', tab_names=tab_names, sections=sections, version=self._cfg.version_str)
 
     def _make_section(self, section: str) -> str:
         values = []
