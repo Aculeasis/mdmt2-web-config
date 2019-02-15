@@ -199,7 +199,7 @@ class Templates:
         return tpl
 
     def cfg(self) -> str:
-        return self._make_page(self._make_config_body())
+        return self._make_config_page(self._cfg)
 
     def result(self, cfg: dict) -> str:
         return self._make_page(self._make_result_body(cfg))
@@ -214,7 +214,8 @@ class Templates:
             version=self._cfg.version_str
         )
 
-    def _make_config_body(self) -> str:
+    @lru_cache(maxsize=1)
+    def _make_config_page(self, _) -> str:
         sections = []
         tab_names = []
         for key in self._cfg:
@@ -230,7 +231,9 @@ class Templates:
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
         sections.append(self._template('remote_log', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
         tab_names.append('[REMOTE LOG]')
-        return self._template('config', tab_names=tab_names, sections=sections, version=self._cfg.version_str)
+        return self._make_page(
+            self._template('config', tab_names=tab_names, sections=sections, version=self._cfg.version_str)
+        )
 
     def _make_section(self, section: str) -> str:
         values = []
@@ -249,7 +252,6 @@ class Templates:
         else:
             return ''
 
-    @lru_cache(maxsize=256)
     def _make_option(self, section: str, key: str, value, wiki: str) -> str:
         return self._template('option', section=section, key=key, value=value, wiki=wiki)
 
