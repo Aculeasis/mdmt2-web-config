@@ -2,7 +2,9 @@ import hashlib
 import json
 import os
 import threading
+import time
 from functools import lru_cache
+from wsgiref.simple_server import make_server, WSGIRequestHandler
 
 import bottle
 # noinspection PyUnresolvedReferences
@@ -26,7 +28,6 @@ class Main(threading.Thread):
         self._ini_ver = self.cfg.gt('system', 'ini_version', 0)
 
         self.disable = False
-        self._server = None
         try:
             self._tpl = Templates(self.cfg, self._get_descriptions())
         except RuntimeError as e:
@@ -34,6 +35,9 @@ class Main(threading.Thread):
             self.disable = True
             return
         self._settings = self._get_settings()
+        self._server = MyApp(self._settings['ip'], self._settings['port'], self._settings['quiet'])
+        self._server.route('/', callback=self._do_get)
+        self._server.route('/', 'POST', self._do_post)
 
     def _get_descriptions(self) -> dict:
         dsc = self.cfg.load_dict(WIKI_JSON)
@@ -67,14 +71,10 @@ class Main(threading.Thread):
         return def_cfg
 
     def start(self):
-        self._server = MyApp(self._settings['ip'], self._settings['port'], self._settings['quiet'])
-        self._server.route('/', callback=self._do_get)
-        self._server.route('/', 'POST', self._do_post)
         super().start()
 
-    def join(self, timeout=None):
-        if self._server:
-            self._server.stop()
+    def join(self, timeout=30):
+        self._server.stop()
         super().join(timeout)
 
     def run(self):
@@ -141,31 +141,32 @@ def hasher(data) -> str:
 class MyApp(bottle.Bottle):
     def __init__(self, ip, port, quiet):
         super().__init__()
-        self.ip, self.port, self.quiet = ip, port, quiet
-        self._server = None
+        self.ip = ip
+        self.port = port
+        self._server = MyWSGIRefServer(host=ip, port=port, quiet=quiet)
 
     def stop(self):
-        if self._server:
-            self._server.stop()
+        time.sleep(0.1)
+        self._server.stop()
 
     def run(self):
-        self._server = MyWSGIRefServer(host=self.ip, port=self.port, quiet=self.quiet)
         super().run(server=self._server)
 
 
 class MyWSGIRefServer(bottle.ServerAdapter):
     server = None
 
-    def run(self, handler):
-        from wsgiref.simple_server import make_server, WSGIRequestHandler
+    def __init__(self, host='127.0.0.1', port=8080, **options):
+        super().__init__(host, port, **options)
         quiet = self.options.pop('quiet', None)
         if quiet is not None:
             self.quiet = quiet
         if self.quiet:
             class QuietHandler(WSGIRequestHandler):
                 def log_request(*args, **kw): pass
-
             self.options['handler_class'] = QuietHandler
+
+    def run(self, handler):
         self.server = make_server(self.host, self.port, handler, **self.options)
         self.server.serve_forever()
 
