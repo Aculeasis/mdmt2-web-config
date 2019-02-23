@@ -1,4 +1,4 @@
-<!-- remote_log -->
+<!-- maintenance -->
 <div class="tab">
 <hr>
 <style>
@@ -16,7 +16,21 @@
     border-width: thick;
     border-style: solid;
     }
+    .model_button {
+      width: 5em;
+    }
+    .model_block {
+      border: dotted;
+      border-width: thin;
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+      padding-left: 0.6em;
+    }
+    .model_label {
+      width: 4em;
+    }
 </style>
+<!-- remote_log -->
 <div>
     <p>
         <input type="button" name=clearButton value="Clear" onClick="clearText();">
@@ -24,10 +38,59 @@
     </p>
 </div>
 <div id="log_outputtext" class="log_outputtext"></div>
-
+<!-- remote_log end -->
+<!-- models -->
+<div class="model_block">
+    <p>
+        <label class="model_label">Model:</label>
+        <input type="button" class="model_button" name=compileButton value="Compile" onClick="sendCMD('compile');">
+        <input type="button" class="model_button" name=removeButton value="Remove" onClick="sendCMD('del');">
+        <select id="modelSelect">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        </select>
+    </p>
+    <p>
+        <label class="model_label">Sample:</label>
+        <input type="button" class="model_button" name=recordButton value="Record" onClick="sendCMD('rec');">
+        <input type="button" class="model_button" name=playButton value="Play" onClick="sendCMD('play');">
+        <select id="sampleSelect">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+        </select>
+    </p>
+</div>
+<!-- models end -->
 <script language="javascript" type="text/javascript">
+    var server_url = "ws://{{!terminal_ip}}:7999/";
+    var server_token = "{{!terminal_ws_token}}";
+
     var remote_log = document.getElementById("log_outputtext");
     var connectButton = document.getElementById("connectButton");
+
+    var model_select = document.getElementById("modelSelect");
+    var sample_select = document.getElementById("sampleSelect");
+
+
+    function sendCMD(cmd) {
+      commandExecutor("rec:"+cmd+"_"+model_select.value+"_"+sample_select.value);
+    }
+
+    function commandExecutor(line) {
+      _call(new WebSocket(server_url));
+
+      function _call(ws) {
+        ws.onerror = function(evt) {
+          console.log('error on "' + line + '": ' + evt.data);
+         };
+        ws.onopen = function() {
+          console.log('execute: ' + line);
+          ws.send(server_token);
+          ws.send(line);
+          ws.close();
+        };
+      };
+    }
+
     // ansi color -> html; https://github.com/mmalecki/ansispan
     var ansispan = function (str) {
       Object.keys(ansispan.foregroundColors).forEach(function (ansi) {
@@ -68,7 +131,7 @@
     // replace end
   function doConnect()
   {
-    websocket = new WebSocket("ws://{{!terminal_ip}}:7999/");
+    websocket = new WebSocket(server_url);
     websocket.onopen = function(evt) { onOpen(evt) };
     websocket.onclose = function(evt) { onClose(evt) };
     websocket.onmessage = function(evt) { onMessage(evt) };
@@ -78,7 +141,7 @@
   {
     writeToScreenMsg("connected");
     connectButton.value = "Disconnect";
-    websocket.send('{{!terminal_ws_token}}');
+    websocket.send(server_token);
     websocket.send('remote_log');
   }
   function onClose(evt)
@@ -119,4 +182,4 @@
    }
 </script>
 </div>
-<!-- remote_log end -->
+<!-- maintenance end -->

@@ -191,7 +191,7 @@ class Templates:
         self._tpl = self._load_templates()
 
     def _load_templates(self):
-        names = ('page', 'config', 'section', 'option', 'remote_log', 'result')
+        names = ('page', 'config', 'section', 'option', 'maintenance', 'result')
         tpl = {}
         for name in names:
             path = os.path.join(self.TEMPLATES, '{}.tpl'.format(name))
@@ -227,11 +227,11 @@ class Templates:
                 continue
             tab_names.append(key.capitalize())
             sections.append(section)
-        # add remote log tab
+        # add maintenance tab
         terminal_ip = self._cfg.gts('ip')
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
-        sections.append(self._template('remote_log', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
-        tab_names.append('[REMOTE LOG]')
+        sections.append(self._template('maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
+        tab_names.append('[MAINTENANCE]')
         return self._make_page(
             self._template('config', tab_names=tab_names, sections=sections, version=self._cfg.version_str)
         )
