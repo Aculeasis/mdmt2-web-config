@@ -76,18 +76,15 @@
     }
 
     function commandExecutor(line) {
-      _call(new WebSocket(server_url));
-
-      function _call(ws) {
-        ws.onerror = function(evt) {
-          console.log('error on "' + line + '": ' + evt.data);
-         };
-        ws.onopen = function() {
-          console.log('execute: ' + line);
-          ws.send(server_token);
-          ws.send(line);
-          ws.close();
-        };
+      var ws = new WebSocket(server_url);
+      ws.onerror = function(evt) {
+        console.log('error on "' + line + '": ' + evt.data);
+      };
+      ws.onopen = function() {
+        console.log('execute: ' + line);
+        ws.send(server_token);
+        ws.send(line);
+        ws.close();
       };
     }
 
@@ -129,57 +126,70 @@
         return str.includes('<span style="color: cyan">majordomo</span>') ? decodeURI(str) : str;
     }
     // replace end
-  function doConnect()
-  {
+  function doConnect() {
     websocket = new WebSocket(server_url);
     websocket.onopen = function(evt) { onOpen(evt) };
     websocket.onclose = function(evt) { onClose(evt) };
     websocket.onmessage = function(evt) { onMessage(evt) };
     websocket.onerror = function(evt) { onError(evt) };
   }
-  function onOpen(evt)
-  {
+  function onOpen(evt) {
     writeToScreenMsg("connected");
     connectButton.value = "Disconnect";
     websocket.send(server_token);
     websocket.send('remote_log');
   }
-  function onClose(evt)
-  {
+  function onClose(evt) {
     writeToScreenMsg("disconnected");
     connectButton.value = "Connect";
   }
-  function onMessage(evt)
-  {
+  function onMessage(evt) {
     writeToScreenLog(evt.data);
   }
-  function onError(evt)
-  {
+  function onError(evt) {
     writeToScreenMsg('error: ' + evt.data);
     websocket.close();
   }
-  function writeToScreenMsg(message)
-  {
+  function writeToScreenMsg(message) {
     writeToScreen('<span style="color: darkorange">' + message + '</span>');
   }
-  function writeToScreenLog(message)
-  {
+  function writeToScreenLog(message) {
     writeToScreen(ansispan(safe_tags_replace(message)));
   }
-  function writeToScreen(message)
-  {
+  function writeToScreen(message) {
     remote_log.innerHTML += message + "<br>";
     remote_log.scrollTop = remote_log.scrollHeight;
   }
   function clearText() {
-        remote_log.innerHTML = "";
-   }
-   function doDisconnect() {
-        websocket.close();
-   }
-   function doConnectDisconnect() {
-        (connectButton.value == "Connect") ? doConnect() : doDisconnect()
-   }
+    remote_log.innerHTML = "";
+  }
+  function doDisconnect() {
+    websocket.close();
+  }
+  function doConnectDisconnect() {
+    (connectButton.value == "Connect") ? doConnect() : doDisconnect()
+  }
+  function handlerForThisRadio(searchText, onOFF) {
+    var labels = document.getElementsByTagName("label");
+    var element = document.getElementById(onOFF);
+    if (!element) return;
+
+    for (var i = 0; i < labels.length; i++) {
+      if (!labels[i].htmlFor) continue;
+      var radio = document.getElementById(labels[i].htmlFor);
+      if (!radio) continue;
+      if (labels[i].textContent == searchText) {
+        radio.onchange = function() {
+          element.style.visibility = 'hidden';
+        };
+        if (radio.checked) element.style.visibility = 'hidden';
+      } else {
+        radio.onchange = function() {
+          element.style.visibility = 'visible';
+        }
+      }
+    }
+  }
 </script>
 </div>
 <!-- maintenance end -->

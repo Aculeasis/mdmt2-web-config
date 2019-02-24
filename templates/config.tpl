@@ -15,5 +15,8 @@
 {{!section}}
 %end
   </div>
-  <div class="buttons"><input type="submit"> <input type="reset"> <div class="version">v. {{!version}}</div></div>
+  <div class="buttons" id="send_buttons">
+    <input type="submit"> <input type="reset"> <div class="version">v. {{!version}}</div>
+  </div>
+  <script language="javascript" type="text/javascript">handlerForThisRadio('{{!MAINTENANCE}}', 'send_buttons');</script>
 </form>

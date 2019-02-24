@@ -184,6 +184,7 @@ class MyWSGIRefServer(bottle.ServerAdapter):
 
 class Templates:
     TEMPLATES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+    MAINTENANCE = '[MAINTENANCE]'
 
     def __init__(self, cfg, wiki: dict):
         self._cfg = cfg
@@ -231,9 +232,11 @@ class Templates:
         terminal_ip = self._cfg.gts('ip')
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
         sections.append(self._template('maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
-        tab_names.append('[MAINTENANCE]')
-        return self._make_page(
-            self._template('config', tab_names=tab_names, sections=sections, version=self._cfg.version_str)
+        tab_names.append(self.MAINTENANCE)
+        return self._make_page(self._template(
+            'config',
+            tab_names=tab_names, sections=sections, version=self._cfg.version_str, MAINTENANCE=self.MAINTENANCE
+            )
         )
 
     def _make_section(self, section: str) -> str:

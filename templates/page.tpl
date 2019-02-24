@@ -27,6 +27,7 @@
     position: relative;
     right: 5%;
     transform: translate(0, 50%);
+    visibility: visible;
   }
   .buttons {
     padding-left: 0.5em;
