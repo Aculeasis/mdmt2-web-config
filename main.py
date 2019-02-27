@@ -230,8 +230,14 @@ class Templates:
             sections.append(section)
         # add maintenance tab
         terminal_ip = self._cfg.gts('ip')
+        # websocket authorization
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
-        sections.append(self._template('maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token))
+        # authorization
+        auth_token = self._cfg.gt('smarthome', 'token')
+        auth_token = hashlib.sha3_512(auth_token.encode() if auth_token else os.urandom(64)).hexdigest()
+        sections.append(self._template(
+            'maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token, auth_token=auth_token)
+        )
         tab_names.append(self.MAINTENANCE)
         return self._make_page(self._template(
             'config',
