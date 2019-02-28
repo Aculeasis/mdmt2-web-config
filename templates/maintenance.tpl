@@ -63,7 +63,7 @@
 <script language="javascript" type="text/javascript">
     var server_url = "ws://{{!terminal_ip}}:7999/";
     var server_token = "{{!terminal_ws_token}}";
-    var authorization = "authorization:{{!auth_token}}";
+    var authorization = '{"method":"authorization","params":["{{!auth_token}}"],"id":"Authorization"}';
 
     var remote_log = document.getElementById("log_outputtext");
     var connectButton = document.getElementById("connectButton");
@@ -151,7 +151,7 @@
   function onMessage(evt) {
     if (evt.data.startsWith('{') && evt.data.endsWith('}')) {
       let msg = JSON.parse(evt.data);
-      writeToScreenMsg(safe_tags_replace(`${msg.cmd} [${msg.code}] ${msg.msg}`));
+      writeToScreenMsg(safe_tags_replace(`${msg.id} ${msg.result}`));
       return;
     };
     writeToScreenLog(evt.data);
