@@ -15,7 +15,6 @@ import logger
 NAME = 'web-config'
 API = 665
 
-WIKI_JSON = 'web_config_wiki'
 SETTINGS = 'web_config_config'
 
 
@@ -25,11 +24,10 @@ class Main(threading.Thread):
         self.cfg = cfg
         self.log = log
         self.own = owner
-        self._ini_ver = self.cfg.gt('system', 'ini_version', 0)
 
         self.disable = False
         try:
-            self._tpl = Templates(self.cfg, self._get_descriptions())
+            self._tpl = Templates(self.cfg)
         except RuntimeError as e:
             self.log(e, logger.ERROR)
             self.disable = True
@@ -38,23 +36,6 @@ class Main(threading.Thread):
         self._server = MyApp(self._settings['ip'], self._settings['port'], self._settings['quiet'])
         self._server.route('/', callback=self._do_get)
         self._server.route('/', 'POST', self._do_post)
-
-    def _get_descriptions(self) -> dict:
-        dsc = self.cfg.load_dict(WIKI_JSON)
-        if not dsc or not isinstance(dsc, list) or len(dsc) != 2 or not isinstance(dsc[0], int) \
-                or not isinstance(dsc[1], dict):
-            self.log('Initial generate {}.json from wiki...'.format(WIKI_JSON), logger.INFO)
-            dsc = self._init_descriptions()
-        if dsc[0] < self._ini_ver:
-            self.log('{}.json is outdated ({} < {}), update...'.format(WIKI_JSON, dsc[0], self._ini_ver), logger.INFO)
-            dsc = self._init_descriptions()
-        return dsc[1]
-
-    def _init_descriptions(self) -> list:
-        dsc = [self._ini_ver, get_descriptions_from_wiki()]
-        self.cfg.save_dict(WIKI_JSON, dsc, True)
-        self.log('SUCCESS!', logger.INFO)
-        return dsc
 
     def _get_settings(self) -> dict:
         def_cfg = {'ip': '0.0.0.0', 'port': 8989, 'quiet': True, 'username': '', 'secure': []}
@@ -186,9 +167,8 @@ class Templates:
     TEMPLATES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     MAINTENANCE = '[MAINTENANCE]'
 
-    def __init__(self, cfg, wiki: dict):
+    def __init__(self, cfg):
         self._cfg = cfg
-        self._wiki = wiki
         self._tpl = self._load_templates()
 
     def _load_templates(self):
@@ -220,10 +200,11 @@ class Templates:
     def _make_config_page(self, _) -> str:
         sections = []
         tab_names = []
+        wiki = self._cfg.wiki_desc
         for key in self._cfg:
             if not isinstance(self._cfg[key], dict):
                 continue
-            section = self._make_section(key)
+            section = self._make_section(key, wiki.get(key, {}))
             if not section:
                 continue
             tab_names.append(key.capitalize())
@@ -245,13 +226,13 @@ class Templates:
             )
         )
 
-    def _make_section(self, section: str) -> str:
+    def _make_section(self, section: str, wiki_desc: dict) -> str:
         values = []
         for key, val in self._cfg[section].items():
             if not isinstance(key, str) or section == 'system' and key not in ('ws_token',):
                 continue
-            values.append(self._make_option(section, key, val, self._wiki.get(section, {}).get(key, '')))
-        wiki = self._wiki.get(section, {}).get('null', '')
+            values.append(self._make_option(section, key, val, wiki_desc.get(key, '')))
+        wiki = wiki_desc.get('null', '')
         if values or wiki:
             return self._template(
                 'section',

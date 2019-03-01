@@ -1,5 +1,5 @@
 %if wiki:
-<p><label class="key_label"><abbr title="{{!wiki}}">{{key}}</abbr></label>
+<p><label class="key_label"><abbr title="{{wiki}}">{{key}}</abbr></label>
 %else:
 <p><label class="key_label">{{key}}</label>
 %end
