@@ -7,8 +7,6 @@ from functools import lru_cache
 from wsgiref.simple_server import make_server, WSGIRequestHandler
 
 import bottle
-# noinspection PyUnresolvedReferences
-from wiki_parser import get_descriptions_from_wiki
 
 import logger
 
