@@ -25,6 +25,7 @@
       margin-top: 0.5em;
       margin-bottom: 0.5em;
       padding-left: 0.6em;
+      padding-right: 0.6em;
     }
     .model_label {
       width: 4em;
@@ -39,27 +40,43 @@
 </div>
 <div id="log_outputtext" class="log_outputtext"></div>
 <!-- remote_log end -->
-<!-- models -->
+<!-- actions -->
 <div class="model_block">
-    <p>
-        <label class="model_label">Model:</label>
-        <input type="button" class="model_button" name=compileButton value="Compile" onClick="sendCMD('compile');">
-        <input type="button" class="model_button" name=removeButton value="Remove" onClick="sendCMD('del');">
-        <select id="modelSelect">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-        </select>
-    </p>
-    <p>
-        <label class="model_label">Sample:</label>
-        <input type="button" class="model_button" name=recordButton value="Record" onClick="sendCMD('rec');">
-        <input type="button" class="model_button" name=playButton value="Play" onClick="sendCMD('play');">
-        <select id="sampleSelect">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-        </select>
-    </p>
+    <!-- models -->
+    <div class="model_block">
+        <p>
+            <label class="model_label">Model:</label>
+            <input type="button" class="model_button" name=compileButton value="Compile" onClick="sendRecCMD('compile');">
+            <input type="button" class="model_button" name=removeButton value="Remove" onClick="sendRecCMD('del');">
+            <select id="modelSelect">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            </select>
+        </p>
+        <p>
+            <label class="model_label">Sample:</label>
+            <input type="button" class="model_button" name=recordButton value="Record" onClick="sendRecCMD('rec');">
+            <input type="button" class="model_button" name=playButton value="Play" onClick="sendRecCMD('play');">
+            <select id="sampleSelect">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            </select>
+        </p>
+    </div>
+    <!-- models end -->
+    <!-- send commands -->
+    <div class="model_block">
+        <p>
+            <label class="model_label">CMD:</label>
+            <input type="button" class="model_button" name="cmdButton" value="Send" onclick="sendCMD();">
+            <select id="cmdSelect">
+                <option value="maintenance.reload">Reload</option><option value="maintenance.stop">Stop</option>
+                <option value="listener:on">Listener On</option><option value="listener:off">Listener Off</option>
+            </select>
+        </p>
+    </div>
+    <!-- send commands end -->
 </div>
-<!-- models end -->
+<!-- actions end -->
 <script language="javascript" type="text/javascript">
     var server_url = "ws://{{!terminal_ip}}:7999/";
     var server_token = "{{!terminal_ws_token}}";
@@ -70,10 +87,15 @@
 
     var model_select = document.getElementById("modelSelect");
     var sample_select = document.getElementById("sampleSelect");
+    var cmd_select = document.getElementById("cmdSelect");
 
 
-    function sendCMD(cmd) {
+    function sendRecCMD(cmd) {
       commandExecutor("rec:"+cmd+"_"+model_select.value+"_"+sample_select.value);
+    }
+
+    function sendCMD() {
+      commandExecutor(cmd_select.value);
     }
 
     function commandExecutor(line) {
