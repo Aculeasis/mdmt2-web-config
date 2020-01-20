@@ -69,8 +69,9 @@
             <label class="model_label">CMD:</label>
             <input type="button" class="model_button" name="cmdButton" value="Send" onclick="sendCMD();">
             <select id="cmdSelect">
+                <option value="ping">Ping</option>
                 <option value="maintenance.reload">Reload</option><option value="maintenance.stop">Stop</option>
-                <option value="listener:on">Listener On</option><option value="listener:off">Listener Off</option>
+                <option value="listener:off">Listener Off</option><option value="listener:on">Listener On</option>
             </select>
         </p>
     </div>
@@ -95,7 +96,33 @@
     }
 
     function sendCMD() {
-      commandExecutor(cmd_select.value);
+      if (cmd_select.value == "ping")
+        measurePing();
+      else
+        commandExecutor(cmd_select.value);
+    }
+
+    function measurePing() {
+      var ws = new WebSocket(server_url);
+      ws.onerror = function(evt) {
+        console.log('error on "' + line + '": ' + evt.data);
+      };
+      ws.onopen = function() {
+        ws.send(server_token);
+        ws.send(authorization);
+      };
+      ws.onmessage = function(evt) {
+        let msg = JSON.parse(evt.data);
+        if (!msg.hasOwnProperty("id") || !msg.hasOwnProperty("result")) {
+          ws.close();
+        } else if (msg["id"] == "Authorization") {
+          console.log('execute: ping');
+          ws.send(JSON.stringify({"method": "ping", "id": "ping"}));
+        } else if (msg["id"] == "ping") {
+          ws.send(JSON.stringify({"method": "pong", "params": [msg["result"]]}));
+          ws.close();
+        };
+      };
     }
 
     function commandExecutor(line) {
