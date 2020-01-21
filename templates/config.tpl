@@ -4,7 +4,7 @@
   {{!menu_styles}}
   { display:block;}
 </style>
-<form action="/" method="post">
+<form action="/{{!"less" if less else "more"}}" method="post">
   <div class="tab-frame">
 %for index, tab in enumerate(tab_names):
 %index += 1
@@ -16,7 +16,8 @@
 %end
   </div>
   <div class="buttons" id="send_buttons">
-    <input type="submit"> <input type="reset"> <div class="version">v. {{!version}}</div>
+    <input type="submit"> <input type="reset">
+    <div class="version">v. {{!version}} | <a class="mode" href="/{{!"more" if less else "less"}}">{{!"more" if less else "less"}}</a> |</div>
   </div>
   <script language="javascript" type="text/javascript">handlerForThisRadio('{{!MAINTENANCE}}', 'send_buttons');</script>
 </form>

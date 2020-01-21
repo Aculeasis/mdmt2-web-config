@@ -9,9 +9,12 @@ from wsgiref.simple_server import make_server, WSGIRequestHandler
 import bottle
 
 import logger
+# noinspection PyUnresolvedReferences
+from less_settings import less_settings
 
 NAME = 'web-config'
 API = 665
+TERMINAL_VER_MIN = (0, 14, 3)
 
 SETTINGS = 'web_config_config'
 
@@ -33,7 +36,9 @@ class Main(threading.Thread):
         self._settings = self._get_settings()
         self._server = MyApp(self._settings['ip'], self._settings['port'], self._settings['quiet'])
         self._server.route('/', callback=self._do_get)
+        self._server.route('/<mode>', callback=self._do_get)
         self._server.route('/', 'POST', self._do_post)
+        self._server.route('/<mode>', 'POST', self._do_post)
 
     def _get_settings(self) -> dict:
         def_cfg = {'ip': '0.0.0.0', 'port': 8989, 'quiet': True, 'username': '', 'secure': []}
@@ -85,11 +90,13 @@ class Main(threading.Thread):
         if not user or not (user == self._settings['username'] and check_password(self._settings['secure'], password)):
             raise bottle.HTTPError(401, 'Access denied', **{'WWW-Authenticate': 'Basic realm="private"'})
 
-    def _do_get(self):
+    def _do_get(self, mode='more'):
+        less = is_less(mode)
         self._auth_basic()
-        return self._tpl.cfg()
+        return self._tpl.cfg(less=less)
 
-    def _do_post(self):
+    def _do_post(self, mode='more'):
+        less = is_less(mode)
         self._auth_basic()
         result = {}
         for key, val in dict(bottle.request.forms.decode('utf-8')).items():
@@ -99,7 +106,7 @@ class Main(threading.Thread):
                 if key[0] not in result:
                     result[key[0]] = {}
                 result[key[0]][key[1]] = val
-        return self._tpl.result(self.own.settings_from_srv(result))
+        return self._tpl.result(less, self.own.settings_from_srv(result))
 
 
 def check_password(secure: list, password: str) -> bool:
@@ -115,6 +122,14 @@ def hasher(data) -> str:
     if isinstance(data, str):
         data = data.encode()
     return hashlib.sha512(data).hexdigest()
+
+
+def is_less(mode) -> bool:
+    if mode == 'less':
+        return True
+    elif mode == 'more':
+        return False
+    raise bottle.HTTPError(404, "Not found: " + repr(bottle.request.path))
 
 
 class MyApp(bottle.Bottle):
@@ -178,31 +193,32 @@ class Templates:
                 tpl[name] = fp.read()
         return tpl
 
-    def cfg(self) -> str:
-        return self._make_config_page(self._cfg)
+    def cfg(self, less: bool) -> str:
+        return self._make_config_page(less, less_settings(self._cfg) if less else self._cfg)
 
-    def result(self, cfg: dict) -> str:
-        return self._make_page(self._make_result_body(cfg))
+    def result(self, less: bool, cfg: dict) -> str:
+        return self._make_page(self._make_result_body(less, cfg))
 
     def _make_page(self, body: str) -> str:
         return self._template('page', body=body)
 
-    def _make_result_body(self, diff: cfg) -> str:
+    def _make_result_body(self, less: bool, diff: dict) -> str:
         return self._template(
             'result',
             result=json.dumps(diff, ensure_ascii=False, indent=4),
-            version=self._cfg.version_str
+            version=self._cfg.version_str,
+            less=less,
         )
 
     @lru_cache(maxsize=1)
-    def _make_config_page(self, _) -> str:
+    def _make_config_page(self, less, cfg) -> str:
         sections = []
         tab_names = []
         wiki = self._cfg.wiki_desc
-        for key in self._cfg:
-            if not isinstance(self._cfg[key], dict):
+        for key in cfg:
+            if not isinstance(cfg[key], dict):
                 continue
-            section = self._make_section(key, wiki.get(key, {}))
+            section = self._make_section(key, cfg, wiki.get(key, {}))
             if not section:
                 continue
             tab_names.append(key.capitalize())
@@ -220,13 +236,14 @@ class Templates:
         tab_names.append(self.MAINTENANCE)
         return self._make_page(self._template(
             'config',
-            tab_names=tab_names, sections=sections, version=self._cfg.version_str, MAINTENANCE=self.MAINTENANCE
+            tab_names=tab_names, sections=sections, version=self._cfg.version_str, MAINTENANCE=self.MAINTENANCE,
+            less=less,
             )
         )
 
-    def _make_section(self, section: str, wiki_desc: dict) -> str:
+    def _make_section(self, section: str, cfg: dict, wiki_desc: dict) -> str:
         values = []
-        for key, val in self._cfg[section].items():
+        for key, val in cfg[section].items():
             if not isinstance(key, str) or section == 'system' and key not in ('ws_token',):
                 continue
             values.append(self._make_option(section, key, val, wiki_desc.get(key, '')))

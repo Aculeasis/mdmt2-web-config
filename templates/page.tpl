@@ -33,6 +33,11 @@
     padding-left: 0.5em;
   }
   body{max-width:800px;margin:20px auto;font-family:Arial;}
+  .mode {
+    color: #6991df;
+    font-size: small;
+    font-weight: bold;
+  }
 </style>
 {{!body}}
 </body>
