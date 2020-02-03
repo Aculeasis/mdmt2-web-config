@@ -7,20 +7,23 @@ from functools import lru_cache
 from wsgiref.simple_server import make_server, WSGIRequestHandler
 
 import bottle
-
-import logger
 # noinspection PyUnresolvedReferences
 from less_settings import less_settings
 
+import logger
+from lib.socket_api_handler import SELF_AUTH_CHANNEL
+from owner import Owner
+from utils import state_cache
+
 NAME = 'web-config'
 API = 665
-TERMINAL_VER_MIN = (0, 14, 3)
+TERMINAL_VER_MIN = (0, 14, 11)
 
 SETTINGS = 'web_config_config'
 
 
 class Main(threading.Thread):
-    def __init__(self, cfg, log, owner):
+    def __init__(self, cfg, log, owner: Owner):
         super().__init__()
         self.cfg = cfg
         self.log = log
@@ -55,9 +58,11 @@ class Main(threading.Thread):
         return def_cfg
 
     def start(self):
+        self.own.sub_call(SELF_AUTH_CHANNEL, 'add', NAME, self._tpl.check_auth)
         super().start()
 
     def join(self, timeout=30):
+        self.own.sub_call(SELF_AUTH_CHANNEL, 'remove', NAME, self._tpl.check_auth)
         self._server.stop()
         super().join(timeout)
 
@@ -193,8 +198,16 @@ class Templates:
                 tpl[name] = fp.read()
         return tpl
 
+    @property
+    @state_cache(48 * 3600)
+    def _token(self):
+        return hashlib.sha512(os.urandom(64)).hexdigest()
+
+    def check_auth(self, token: str, *_) -> bool:
+        return self._token == token
+
     def cfg(self, less: bool) -> str:
-        return self._make_config_page(less, less_settings(self._cfg) if less else self._cfg)
+        return self._make_config_page(less, less_settings(self._cfg) if less else self._cfg, self._token)
 
     def result(self, less: bool, cfg: dict) -> str:
         return self._make_page(self._make_result_body(less, cfg))
@@ -211,7 +224,7 @@ class Templates:
         )
 
     @lru_cache(maxsize=1)
-    def _make_config_page(self, less, cfg) -> str:
+    def _make_config_page(self, less, cfg, token) -> str:
         sections = []
         tab_names = []
         wiki = self._cfg.wiki_desc
@@ -228,11 +241,10 @@ class Templates:
         # websocket authorization
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
         # authorization
-        auth_token = self._cfg.gt('smarthome', 'token')
-        auth_token = hashlib.sha512(auth_token.encode() if auth_token else os.urandom(64)).hexdigest()
+        auth_request = json.dumps(
+            {'method': 'self.authorization', 'params': {'token': token, 'owner': NAME}, 'id': 'Authorization'})
         sections.append(self._template(
-            'maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token, auth_token=auth_token)
-        )
+            'maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token, auth_request=auth_request))
         tab_names.append(self.MAINTENANCE)
         return self._make_page(self._template(
             'config',

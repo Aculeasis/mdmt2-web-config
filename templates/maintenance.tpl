@@ -81,7 +81,7 @@
 <script language="javascript" type="text/javascript">
     var server_url = "ws://{{!terminal_ip}}:7999/";
     var server_token = "{{!terminal_ws_token}}";
-    var authorization = '{"method":"authorization","params":["{{!auth_token}}"],"id":"Authorization"}';
+    var authorization = '{{!auth_request}}';
 
     var remote_log = document.getElementById("log_outputtext");
     var connectButton = document.getElementById("connectButton");
