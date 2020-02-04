@@ -11,15 +11,16 @@ import bottle
 from less_settings import less_settings
 
 import logger
-from lib.socket_api_handler import SELF_AUTH_CHANNEL
 from owner import Owner
 from utils import state_cache
 
 NAME = 'web-config'
 API = 665
-TERMINAL_VER_MIN = (0, 14, 11)
+TERMINAL_VER_MIN = (0, 15, 0)
 
 SETTINGS = 'web_config_config'
+
+SELF_AUTH_CHANNEL = 'net.self.auth'
 
 
 class Main(threading.Thread):
