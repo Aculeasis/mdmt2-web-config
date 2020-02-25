@@ -16,7 +16,7 @@ from utils import state_cache
 
 NAME = 'web-config'
 API = 665
-TERMINAL_VER_MIN = (0, 15, 0)
+TERMINAL_VER_MIN = (0, 15, 3)
 
 SETTINGS = 'web_config_config'
 
@@ -243,7 +243,7 @@ class Templates:
         terminal_ws_token = self._cfg.gt('system', 'ws_token')
         # authorization
         auth_request = json.dumps(
-            {'method': 'self.authorization', 'params': {'token': token, 'owner': NAME}, 'id': 'Authorization'})
+            {'method': 'authorization.self', 'params': {'token': token, 'owner': NAME}, 'id': 'Authorization'})
         sections.append(self._template(
             'maintenance', terminal_ip=terminal_ip, terminal_ws_token=terminal_ws_token, auth_request=auth_request))
         tab_names.append(self.MAINTENANCE)
