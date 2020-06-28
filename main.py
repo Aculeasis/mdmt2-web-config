@@ -63,14 +63,22 @@ class Main(threading.Thread):
         super().start()
 
     def join(self, timeout=30):
-        self.own.sub_call(SELF_AUTH_CHANNEL, 'remove', NAME, self._tpl.check_auth)
-        self._server.stop()
+        self._stop()
         super().join(timeout)
 
+    def _stop(self):
+        self.own.sub_call(SELF_AUTH_CHANNEL, 'remove', NAME, self._tpl.check_auth)
+        self._server.stop()
+
     def run(self):
-        self.log('Web config start listen {}:{}'.format(self._server.ip, self._server.port))
-        self.log('Web config available in http://{}:{}/'.format(self.cfg.gts('ip'), self._server.port), logger.INFO)
-        self._server.run()
+        try:
+            self._server.run()
+        except OSError as e:
+            self.log('Listen error: {}'.format(e), logger.CRIT)
+            self._stop()
+        else:
+            self.log('Start listen {}:{}'.format(self._server.ip, self._server.port))
+            self.log('Available in http://{}:{}/'.format(self.cfg.gts('ip'), self._server.port), logger.INFO)
 
     def _configure_auth(self, user, password):
         self._settings['username'] = user
@@ -180,6 +188,7 @@ class MyWSGIRefServer(bottle.ServerAdapter):
                 self.server.server_close()
             except BrokenPipeError:
                 pass
+            self.server = None
 
 
 class Templates:
