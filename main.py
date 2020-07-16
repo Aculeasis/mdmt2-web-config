@@ -79,6 +79,7 @@ class Main(threading.Thread):
         else:
             self.log('Start listen {}:{}'.format(self._server.ip, self._server.port))
             self.log('Available in http://{}:{}/'.format(self.cfg.gts('ip'), self._server.port), logger.INFO)
+            self._server.server_forever()
 
     def _configure_auth(self, user, password):
         self._settings['username'] = user
@@ -160,6 +161,9 @@ class MyApp(bottle.Bottle):
     def run(self):
         super().run(server=self._server)
 
+    def server_forever(self):
+        self._server.serve_forever()
+
 
 class MyWSGIRefServer(bottle.ServerAdapter):
     server = None
@@ -176,6 +180,8 @@ class MyWSGIRefServer(bottle.ServerAdapter):
 
     def run(self, handler):
         self.server = make_server(self.host, self.port, handler, **self.options)
+
+    def serve_forever(self):
         self.server.serve_forever()
 
     def stop(self):
