@@ -105,16 +105,19 @@ class Main(threading.Thread):
         if not user or not (user == self._settings['username'] and check_password(self._settings['secure'], password)):
             raise bottle.HTTPError(401, 'Access denied', **{'WWW-Authenticate': 'Basic realm="private"'})
 
-    def _do_get(self, mode='more'):
+    def _do_get(self, mode='less'):
         less = is_less(mode)
         self._auth_basic()
         return self._tpl.cfg(less=less)
 
-    def _do_post(self, mode='more'):
+    def _do_post(self, mode='less'):
         less = is_less(mode)
         self._auth_basic()
         result = {}
-        for key, val in dict(bottle.request.forms.decode('utf-8')).items():
+        data = dict(bottle.request.forms.decode('utf-8'))
+        if '_this_is_get_no_post' in data:
+            return self._tpl.cfg(less=less)
+        for key, val in data.items():
             # 'section$key': value
             key = key.split('$', 1)
             if len(key) == 2 and key[0]:
