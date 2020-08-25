@@ -22,8 +22,13 @@ SETTINGS = 'web_config_config'
 
 SELF_AUTH_CHANNEL = 'net.self.auth'
 
+PWD = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES = os.path.join(PWD, 'templates')
+IMG = os.path.join(PWD, 'img')
+
 
 class Main(threading.Thread):
+
     def __init__(self, cfg, log, owner: Owner):
         super().__init__()
         self.cfg = cfg
@@ -37,12 +42,23 @@ class Main(threading.Thread):
             self.log(e, logger.ERROR)
             self.disable = True
             return
+
+        def auth(callback):
+            def wrapper(*args, **kwargs):
+                self._auth_basic()
+                return callback(*args, **kwargs)
+
+            return wrapper
+        do_get, do_post, do_get_img = [
+            auth(x) for x in [self._do_get, self._do_post, lambda filename: bottle.static_file(filename, root=IMG)]
+        ]
         self._settings = self._get_settings()
         self._server = MyApp(self._settings['ip'], self._settings['port'], self._settings['quiet'])
-        self._server.route('/', callback=self._do_get)
-        self._server.route('/<mode>', callback=self._do_get)
-        self._server.route('/', 'POST', self._do_post)
-        self._server.route('/<mode>', 'POST', self._do_post)
+        self._server.route('/', callback=do_get)
+        self._server.route('/<mode>', callback=do_get)
+        self._server.route('/', 'POST', do_post)
+        self._server.route('/<mode>', 'POST', do_post)
+        self._server.route('/img/<filename>', callback=do_get_img)
 
     def _get_settings(self) -> dict:
         def_cfg = {'ip': '0.0.0.0', 'port': 8989, 'quiet': True, 'username': '', 'secure': []}
@@ -106,13 +122,10 @@ class Main(threading.Thread):
             raise bottle.HTTPError(401, 'Access denied', **{'WWW-Authenticate': 'Basic realm="private"'})
 
     def _do_get(self, mode='less'):
-        less = is_less(mode)
-        self._auth_basic()
-        return self._tpl.cfg(less=less)
+        return self._tpl.cfg(less=is_less(mode))
 
     def _do_post(self, mode='less'):
         less = is_less(mode)
-        self._auth_basic()
         result = {}
         data = dict(bottle.request.forms.decode('utf-8'))
         if '_this_is_get_no_post' in data:
@@ -201,18 +214,18 @@ class MyWSGIRefServer(bottle.ServerAdapter):
 
 
 class Templates:
-    TEMPLATES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     MAINTENANCE = '[MAINTENANCE]'
 
     def __init__(self, cfg):
         self._cfg = cfg
         self._tpl = self._load_templates()
 
-    def _load_templates(self):
+    @staticmethod
+    def _load_templates():
         names = ('page', 'config', 'section', 'option', 'maintenance', 'result')
         tpl = {}
         for name in names:
-            path = os.path.join(self.TEMPLATES, '{}.tpl'.format(name))
+            path = os.path.join(TEMPLATES, '{}.tpl'.format(name))
             with open(path) as fp:
                 tpl[name] = fp.read()
         return tpl

@@ -3,6 +3,7 @@
 <head>
   <title>mdmTerminal2 Web Config</title>
   <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="/img/favicon-32x32.png">
 </head>
 <body>
 <style>
