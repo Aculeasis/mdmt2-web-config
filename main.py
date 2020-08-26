@@ -43,22 +43,9 @@ class Main(threading.Thread):
             self.disable = True
             return
 
-        def auth(callback):
-            def wrapper(*args, **kwargs):
-                self._auth_basic()
-                return callback(*args, **kwargs)
-
-            return wrapper
-        do_get, do_post, do_get_img = [
-            auth(x) for x in [self._do_get, self._do_post, lambda filename: bottle.static_file(filename, root=IMG)]
-        ]
         self._settings = self._get_settings()
         self._server = MyApp(self._settings['ip'], self._settings['port'], self._settings['quiet'])
-        self._server.route('/', callback=do_get)
-        self._server.route('/<mode>', callback=do_get)
-        self._server.route('/', 'POST', do_post)
-        self._server.route('/<mode>', 'POST', do_post)
-        self._server.route('/img/<filename>', callback=do_get_img)
+        self._make_routes()
 
     def _get_settings(self) -> dict:
         def_cfg = {'ip': '0.0.0.0', 'port': 8989, 'quiet': True, 'username': '', 'secure': []}
@@ -73,6 +60,28 @@ class Main(threading.Thread):
                 return cfg
         self.cfg.save_dict(SETTINGS, def_cfg, True)
         return def_cfg
+
+    def _make_routes(self):
+        def auth(callback):
+            def wrapper(*args, **kwargs):
+                self._auth_basic()
+                return callback(*args, **kwargs)
+            return wrapper
+
+        def has_mode(callback):
+            def wrapper(*_, mode='less', **__, ):
+                if mode == 'less':
+                    mode = True
+                elif mode == 'more':
+                    mode = False
+                else:
+                    raise bottle.HTTPError(404, "Not found: " + repr(bottle.request.path))
+                return callback(less=mode)
+            return wrapper
+
+        self._server.route(['/', '/<mode>'], callback=auth(has_mode(self._do_get)))
+        self._server.route(['/', '/<mode>'], 'POST', auth(has_mode(self._do_post)))
+        self._server.route('/img/<filename>', callback=auth(lambda filename: bottle.static_file(filename, root=IMG)))
 
     def start(self):
         self.own.sub_call(SELF_AUTH_CHANNEL, 'add', NAME, self._tpl.check_auth)
@@ -108,28 +117,33 @@ class Main(threading.Thread):
         self.cfg.save_dict(SETTINGS, self._settings, True)
 
     def _auth_basic(self):
-        if self._settings['username'] and not self._settings['secure']:
+        first = not self._settings['username']
+        if not first and not self._settings['secure']:
             # password authentication disabled
             return
 
         user, password = bottle.request.auth or (None, '')
-        if not self._settings['username'] and user:
+        if first and user:
             # First start
             self._configure_auth(user, password)
-            msg = 'Setup is complete. Do not forget:\nusername: {}\npassword: {}'.format(user, password)
+            msg = 'Setup is complete. {}'
+            if password:
+                msg = msg.format('Do not forget:\nusername: {}\npassword: {}'.format(user, password))
+            else:
+                msg = msg.format('Authentication disabled!')
             raise bottle.HTTPError(200, msg)
         if not user or not (user == self._settings['username'] and check_password(self._settings['secure'], password)):
-            raise bottle.HTTPError(401, 'Access denied', **{'WWW-Authenticate': 'Basic realm="private"'})
+            realm = 'configure' if first else 'private'
+            raise bottle.HTTPError(401, 'Access denied', **{'WWW-Authenticate': 'Basic realm="{}"'.format(realm)})
 
-    def _do_get(self, mode='less'):
-        return self._tpl.cfg(less=is_less(mode))
+    def _do_get(self, less):
+        return self._tpl.cfg(less=less)
 
-    def _do_post(self, mode='less'):
-        less = is_less(mode)
+    def _do_post(self, less):
         result = {}
         data = dict(bottle.request.forms.decode('utf-8'))
         if '_this_is_get_no_post' in data:
-            return self._tpl.cfg(less=less)
+            return self._do_get(less)
         for key, val in data.items():
             # 'section$key': value
             key = key.split('$', 1)
@@ -153,14 +167,6 @@ def hasher(data) -> str:
     if isinstance(data, str):
         data = data.encode()
     return hashlib.sha512(data).hexdigest()
-
-
-def is_less(mode) -> bool:
-    if mode == 'less':
-        return True
-    elif mode == 'more':
-        return False
-    raise bottle.HTTPError(404, "Not found: " + repr(bottle.request.path))
 
 
 class MyApp(bottle.Bottle):
