@@ -17,7 +17,7 @@
   </div>
   <div class="buttons" id="send_buttons">
     <input type="submit"> <input type="reset">
-    <div class="version">v. {{!version}} | <a class="mode" href="/{{!"more" if less else "less"}}">{{!"more" if less else "less"}}</a> |</div>
+    {{!right_footer}}
   </div>
   <script language="javascript" type="text/javascript">handlerForThisRadio('{{!MAINTENANCE}}', 'send_buttons');</script>
 </form>

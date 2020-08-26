@@ -1,0 +1,1 @@
+<div class="version">v. {{!version}} | <a class="mode" href="/{{!"more" if less else "less"}}">{{!"more" if less else "less"}}</a> |</div>

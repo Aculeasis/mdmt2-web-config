@@ -23,7 +23,7 @@ SETTINGS = 'web_config_config'
 SELF_AUTH_CHANNEL = 'net.self.auth'
 
 PWD = os.path.dirname(os.path.abspath(__file__))
-TEMPLATES = os.path.join(PWD, 'templates')
+TEMPLATES = [os.path.join(PWD, 'templates')]
 IMG = os.path.join(PWD, 'img')
 
 
@@ -224,17 +224,6 @@ class Templates:
 
     def __init__(self, cfg):
         self._cfg = cfg
-        self._tpl = self._load_templates()
-
-    @staticmethod
-    def _load_templates():
-        names = ('page', 'config', 'section', 'option', 'maintenance', 'result')
-        tpl = {}
-        for name in names:
-            path = os.path.join(TEMPLATES, '{}.tpl'.format(name))
-            with open(path) as fp:
-                tpl[name] = fp.read()
-        return tpl
 
     @property
     @state_cache(48 * 3600)
@@ -256,9 +245,8 @@ class Templates:
     def _make_result_body(self, less: bool, diff: dict) -> str:
         return self._template(
             'result',
-            result=json.dumps(diff, ensure_ascii=False, indent=4),
-            version=self._cfg.version_str,
-            less=less,
+            result=json.dumps(diff, ensure_ascii=False, indent=4), less=less,
+            right_footer=self._make_right_footer(less),
         )
 
     @lru_cache(maxsize=1)
@@ -286,8 +274,8 @@ class Templates:
         tab_names.append(self.MAINTENANCE)
         return self._make_page(self._template(
             'config',
-            tab_names=tab_names, sections=sections, version=self._cfg.version_str, MAINTENANCE=self.MAINTENANCE,
-            less=less,
+            tab_names=tab_names, sections=sections, MAINTENANCE=self.MAINTENANCE, less=less,
+            right_footer=self._make_right_footer(less),
             )
         )
 
@@ -311,5 +299,9 @@ class Templates:
     def _make_option(self, section: str, key: str, value, wiki: str) -> str:
         return self._template('option', section=section, key=key, value=value, wiki=wiki)
 
-    def _template(self, name, **kwargs) -> str:
-        return bottle.template(self._tpl[name], **kwargs)
+    def _make_right_footer(self, less: bool) -> str:
+        return self._template('right_footer', less=less, version=self._cfg.version_str)
+
+    @staticmethod
+    def _template(name, **kwargs) -> str:
+        return bottle.template(name, **kwargs, template_lookup=TEMPLATES)
