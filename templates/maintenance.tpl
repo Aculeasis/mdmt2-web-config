@@ -76,6 +76,16 @@
         </p>
     </div>
     <!-- send commands end -->
+    <!-- send message -->
+    <div class="model_block">
+        <p>
+            <label class="model_label"><input type="button" value="TTS" onClick="sendMsgCMD('tts');"></label>
+            <input type="text" id="msgText" value="Hello world!">
+            <input type="button" value="SRE" onClick="sendMsgCMD('sre');">
+            <input type="button" value="RAW" onClick="sendMsgCMD('');">
+        </p>
+    </div>
+    <!-- send message end -->
 </div>
 <!-- actions end -->
 <script language="javascript" type="text/javascript">
@@ -89,10 +99,22 @@
     var model_select = document.getElementById("modelSelect");
     var sample_select = document.getElementById("sampleSelect");
     var cmd_select = document.getElementById("cmdSelect");
+    var msg_text = document.getElementById("msgText");
 
 
     function sendRecCMD(cmd) {
       commandExecutor("rec:"+cmd+"_"+model_select.value+"_"+sample_select.value);
+    }
+
+    function sendMsgCMD(cmd) {
+      if (msg_text.value == "")
+        msg_text.value = "Hello world!";
+      else {
+        if (cmd != "")
+          cmd += ":"
+        commandExecutor(cmd+msg_text.value);
+        msg_text.value = "";
+      }
     }
 
     function sendCMD() {

@@ -16,7 +16,7 @@ from utils import state_cache
 
 NAME = 'web-config'
 API = 665
-TERMINAL_VER_MIN = (0, 15, 3)
+TERMINAL_VER_MIN = (0, 15, 34)
 
 SETTINGS = 'web_config_config'
 
