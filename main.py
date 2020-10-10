@@ -69,7 +69,7 @@ class Main(threading.Thread):
             return wrapper
 
         def has_mode(callback):
-            def wrapper(*_, mode='less', **__, ):
+            def wrapper(*_, mode='less', **__):
                 if mode == 'less':
                     mode = True
                 elif mode == 'more':
