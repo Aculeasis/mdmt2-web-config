@@ -1,7 +1,5 @@
 from functools import lru_cache
 
-from config import ConfigHandler
-from utils import HashableDict
 
 LESS_CFG = {
     'settings': {
@@ -52,9 +50,11 @@ LESS_CFG = {
 
 
 @lru_cache(maxsize=1)
-def less_settings(cfg: ConfigHandler) -> HashableDict:
-    result = HashableDict()
-    stts = {cfg.gts(name) for name in ('providertts', 'providerstt') if cfg.gts(name) and cfg.gts(name) not in LESS_CFG}
+def less_settings(cfg: dict, less_type):
+    def gts(key_, default=None):
+        return cfg['settings'].get(key_, default)
+    result = less_type()
+    stts = {gts(name) for name in ('providertts', 'providerstt') if gts(name) and gts(name) not in LESS_CFG}
     for key, val in cfg.items():
         if key in LESS_CFG:
             result[key] = make_section(val, LESS_CFG[key]) if key != 'music' else make_music_section(val, LESS_CFG[key])

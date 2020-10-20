@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import sys
 import threading
 import time
 from functools import lru_cache
@@ -12,11 +13,11 @@ from less_settings import less_settings
 
 import logger
 from owner import Owner
-from utils import state_cache
+from utils import state_cache, HashableOrderedDict, HashableDict
 
 NAME = 'web-config'
 API = 665
-TERMINAL_VER_MIN = (0, 15, 34)
+TERMINAL_VER_MIN = (0, 17, 1)
 
 SETTINGS = 'web_config_config'
 
@@ -230,11 +231,23 @@ class Templates:
     def _token(self):
         return hashlib.sha512(os.urandom(64)).hexdigest()
 
+    def _prepared_cfg(self, less: bool) -> dict:
+        if sys.version_info < (3, 6):
+            cfg = HashableOrderedDict(sorted(self._cfg.items()))
+            for section in cfg.keys():
+                if isinstance(cfg[section], dict):
+                    cfg[section] = HashableOrderedDict(sorted(cfg[section].items()))
+            less_type = HashableOrderedDict
+        else:
+            cfg = self._cfg
+            less_type = HashableDict
+        return less_settings(cfg, less_type) if less else cfg
+
     def check_auth(self, token: str, *_) -> bool:
         return self._token == token
 
     def cfg(self, less: bool) -> str:
-        return self._make_config_page(less, less_settings(self._cfg) if less else self._cfg, self._token)
+        return self._make_config_page(less, self._prepared_cfg(less), self._token)
 
     def result(self, less: bool, cfg: dict) -> str:
         return self._make_page(self._make_result_body(less, cfg))
