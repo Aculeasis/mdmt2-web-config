@@ -233,10 +233,10 @@ class Templates:
 
     def _prepared_cfg(self, less: bool) -> dict:
         if sys.version_info < (3, 6):
-            cfg = HashableOrderedDict(sorted(self._cfg.items()))
+            cfg = HashableOrderedDict(sorted(self._cfg.items(), key=lambda x: x[0]))
             for section in cfg.keys():
                 if isinstance(cfg[section], dict):
-                    cfg[section] = HashableOrderedDict(sorted(cfg[section].items()))
+                    cfg[section] = HashableOrderedDict(sorted(cfg[section].items(), key=lambda x: x[0]))
             less_type = HashableOrderedDict
         else:
             cfg = self._cfg
