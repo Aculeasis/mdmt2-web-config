@@ -1,5 +1,6 @@
 # Web config plugin for mdmTerminal2
-Позволяет настраивать [терминал](https://github.com/Aculeasis/mdmTerminal2) и смотреть логи в браузере.
+Позволяет настраивать [терминал](https://github.com/Aculeasis/mdmTerminal2) и смотреть логи в браузере. 
+По умолчанию веб-сервер доступен на `http://<ip-терминала>:8989/`
 
 # Установка
 ```
