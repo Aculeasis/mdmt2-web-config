@@ -216,7 +216,7 @@
     websocket.send('remote_log');
   }
   function onClose(evt) {
-    writeToScreenMsg("disconnected");
+    writeToScreenMsg("disconnected: " + evt.code);
     connectButton.value = "Connect";
   }
   function onMessage(evt) {
